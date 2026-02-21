@@ -12,7 +12,7 @@ import { AlertCircle, Zap } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 
 export function Dashboard() {
-  const { data, loading, error, stage, runPipeline, reset } = usePipeline();
+  const { data, loading, error, stage, runPipeline, editBlogPost, reset } = usePipeline();
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,6 +95,7 @@ export function Dashboard() {
                   <BlogOutput
                     blogFinal={data.blog_final}
                     blogEvolution={data.blog_evolution}
+                    onSaveEdit={editBlogPost}
                   />
                 </section>
 
