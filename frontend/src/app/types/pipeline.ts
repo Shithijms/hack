@@ -88,6 +88,7 @@ export interface TwitterData {
 }
 
 export interface PipelineResponse {
+  blog_post_id?: string | number;
   raw_signals: RawSignal[];
   scored_signals: ScoredSignal[];
   selected_signal: SelectedSignal;
@@ -98,6 +99,7 @@ export interface PipelineResponse {
   blog_evolution: BlogEvolution[];
   linkedin: LinkedInData;
   twitter: TwitterData;
+  [key: string]: any;
 }
 
 export type PipelineStage = 

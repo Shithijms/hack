@@ -78,6 +78,39 @@ export function usePipeline() {
     }
   }, []);
 
+  const editBlogPost = useCallback(async (updatedBlog: string) => {
+    if (!data) {
+      throw new Error('No pipeline data available to edit');
+    }
+
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EDIT_BLOGPOST}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        blog_post_id: data.blog_post_id,
+        blog_final: updatedBlog,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Edit blog post failed (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+    const updatedBlogFinal = typeof result?.blog_final === 'string' ? result.blog_final : updatedBlog;
+
+    setData({
+      ...data,
+      ...result,
+      blog_final: updatedBlogFinal,
+    });
+
+    return updatedBlogFinal;
+  }, [data]);
+
   const reset = useCallback(() => {
     setData(null);
     setError(null);
@@ -91,6 +124,7 @@ export function usePipeline() {
     error,
     stage,
     runPipeline,
+    editBlogPost,
     reset,
   };
 }

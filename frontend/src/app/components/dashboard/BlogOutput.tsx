@@ -1,29 +1,64 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Copy, Check, FileText, TrendingUp } from 'lucide-react';
+import { Copy, Check, FileText, TrendingUp, Pencil, Save, X } from 'lucide-react';
 import { BlogEvolution } from '../../types/pipeline';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
+import { Textarea } from '../ui/textarea';
 
 interface BlogOutputProps {
   blogFinal: string;
   blogEvolution: BlogEvolution[];
+  onSaveEdit: (updatedBlog: string) => Promise<unknown>;
 }
 
-export function BlogOutput({ blogFinal, blogEvolution }: BlogOutputProps) {
+export function BlogOutput({ blogFinal, blogEvolution, onSaveEdit }: BlogOutputProps) {
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(blogFinal);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setDraft(blogFinal);
+  }, [blogFinal]);
+
+  const currentContent = isEditing ? draft : blogFinal;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(blogFinal);
+      await navigator.clipboard.writeText(currentContent);
       setCopied(true);
       toast.success('Blog post copied to clipboard!');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
       toast.error('Failed to copy to clipboard');
+    }
+  };
+
+  const startEditing = () => {
+    setDraft(blogFinal);
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setDraft(blogFinal);
+    setIsEditing(false);
+  };
+
+  const saveEditing = async () => {
+    try {
+      setSaving(true);
+      await onSaveEdit(draft);
+      toast.success('Blog post updated successfully');
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Failed to edit blog post:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to update blog post');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -85,25 +120,52 @@ export function BlogOutput({ blogFinal, blogEvolution }: BlogOutputProps) {
               <FileText className="h-5 w-5" />
               Blog Post
             </CardTitle>
-            <Button onClick={handleCopy} variant="outline" size="sm">
-              {copied ? (
-                <>
-                  <Check className="mr-2 h-4 w-4 text-green-500" />
-                  Copied!
-                </>
+            <div className="flex items-center gap-2">
+              {!isEditing ? (
+                <Button onClick={startEditing} variant="outline" size="sm">
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
               ) : (
                 <>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy
+                  <Button onClick={saveEditing} variant="default" size="sm" disabled={saving}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {saving ? 'Saving...' : 'Save'}
+                  </Button>
+                  <Button onClick={cancelEditing} variant="outline" size="sm" disabled={saving}>
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel
+                  </Button>
                 </>
               )}
-            </Button>
+              <Button onClick={handleCopy} variant="outline" size="sm">
+                {copied ? (
+                  <>
+                    <Check className="mr-2 h-4 w-4 text-green-500" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown
-              components={{
+          {isEditing ? (
+            <Textarea
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              rows={18}
+              className="font-mono text-sm"
+            />
+          ) : (
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown
+                components={{
                 h1: ({ children }) => (
                   <h1 className="text-2xl font-semibold mt-6 mb-4">{children}</h1>
                 ),
@@ -140,11 +202,12 @@ export function BlogOutput({ blogFinal, blogEvolution }: BlogOutputProps) {
                     {children}
                   </pre>
                 ),
-              }}
-            >
-              {blogFinal}
-            </ReactMarkdown>
-          </div>
+                }}
+              >
+                {blogFinal}
+              </ReactMarkdown>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
